@@ -39,7 +39,7 @@ fi
 log "Starting backup from $SOURCE_DIR to $BACKUP_DIR"
 
 # Correct rsync command - simplified approach
-rsync -avh --progress --delete "$SOURCE_DIR" "$BACKUP_DIR" 2>&1 | tee -a "$LOG_FILE"
+rsync -avh --exclude=.DS_Store --progress --delete "$SOURCE_DIR" "$BACKUP_DIR" 2>&1 | tee -a "$LOG_FILE"
 
 # Check rsync exit status
 if [ $? -eq 0 ]; then
