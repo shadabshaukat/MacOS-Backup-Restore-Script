@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Configuration
-SOURCE_DIR="/Volumes/Shadab T7 One/Oracle Content Orcl Laptop MacbookBro/Oracle Content" # No Trailing Slash
-BACKUP_DIR="/Users/shadab/Downloads"  # No Trailing Slash
+SOURCE_DIR="/Volumes/Shadab T7 One/Oracle-Content-New-Orcl-MacbookPro/OracleContent" # No trailing '/' means directory 'OracleContent' will be copied with all it's content
+BACKUP_DIR="/Users/shadab/Downloads" # No trailing '/' means directory 'OracleContent' with all its content will be copied here
 CHECKPOINT_FILE="$HOME/Library/Application Support/FolderRestore/restore_checkpoint"
 LOG_FILE="$HOME/Library/Logs/FolderRestore.log"
 
