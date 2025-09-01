@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-SOURCE_DIR="$HOME/Downloads/OracleContent" # No trailing '/' means it copies the entire directory with name 'OracleContent' to target
+SOURCE_DIR="$HOME/Downloads/OracleContent"  # No trailing '/' means it copies the entire directory with name 'OracleContent' to target
 BACKUP_DIR="/Volumes/Shadab T7 One/Oracle-Content-New-Orcl-MacbookPro" # No trailing '/' means it pastes 'OracleContent' to this folder
 CHECKPOINT_FILE="$HOME/Library/Application Support/FolderBackup/backup_checkpoint"
 LOG_FILE="$HOME/Library/Logs/FolderBackup.log"
@@ -38,21 +38,33 @@ fi
 # Perform the backup
 log "Starting backup from $SOURCE_DIR to $BACKUP_DIR"
 
-# Correct rsync command - simplified approach
-rsync -avh --exclude=.DS_Store --progress --delete "$SOURCE_DIR" "$BACKUP_DIR" 2>&1 | tee -a "$LOG_FILE"
+# Rsync with exclusions for venv and __pycache__ (recursively), and .venv for common setups
+rsync -avh \
+  --exclude='.DS_Store' \
+  --exclude='venv/' \
+  --exclude='.venv/' \
+  --exclude='__pycache__/' \
+  --progress --delete \
+  "$SOURCE_DIR" "$BACKUP_DIR" 2>&1 | tee -a "$LOG_FILE"
 
 # Check rsync exit status
-if [ $? -eq 0 ]; then
+status=$?
+if [ $status -eq 0 ]; then
     log "Rsync completed successfully"
 else
-    log "Rsync failed with error code $?"
+    log "Rsync failed with error code $status"
 fi
 
-# Update checkpoint file with current timestamp and file list
+# Update checkpoint file with current timestamp and file list (skipping venv/.venv/__pycache__)
 log "Updating checkpoint file"
-echo "Last backup: $(date)" > "$CHECKPOINT_FILE"
-find "$SOURCE_DIR" -type f -print0 | while IFS= read -r -d '' file; do
-    echo "${file#$SOURCE_DIR}" >> "$CHECKPOINT_FILE"
-done
+{
+    echo "Last backup: $(date)"
+    find "$SOURCE_DIR" \
+        -type d \( -name venv -o -name .venv -o -name __pycache__ \) -prune -o \
+        -type f -print0 |
+    while IFS= read -r -d '' file; do
+        echo "${file#$SOURCE_DIR}"
+    done
+} > "$CHECKPOINT_FILE"
 
 log "Backup process completed"
