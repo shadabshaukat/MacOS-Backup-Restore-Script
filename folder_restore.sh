@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-SOURCE_DIR="/Volumes/Shadab T7 One/Oracle-Content-New-Orcl-MacbookPro/OracleContent" # No trailing '/' means directory 'OracleContent' will be copied with all it's content
+SOURCE_DIR="/Volumes/Shadab T7 One/Oracle-Content-New-Orcl-MacbookPro/OracleContent" # No trailing '/' means directory 'OracleContent' will be copied with all its content
 BACKUP_DIR="/Users/shadab/Downloads" # No trailing '/' means directory 'OracleContent' with all its content will be copied here
 CHECKPOINT_FILE="$HOME/Library/Application Support/FolderRestore/restore_checkpoint"
 LOG_FILE="$HOME/Library/Logs/FolderRestore.log"
@@ -17,9 +17,9 @@ log() {
     echo "$message" | tee -a "$LOG_FILE"
 }
 
-# Check if backup directory is available
+# Check if destination directory is available
 if [ ! -d "$BACKUP_DIR" ]; then
-    log "Backup directory not available: $BACKUP_DIR"
+    log "Destination directory not available: $BACKUP_DIR"
     exit 1
 fi
 
@@ -35,24 +35,37 @@ if [ ! -f "$CHECKPOINT_FILE" ]; then
     touch "$CHECKPOINT_FILE"
 fi
 
-# Perform the backup
-log "Starting backup from $SOURCE_DIR to $BACKUP_DIR"
+# Perform the restore
+log "Starting restore from $SOURCE_DIR to $BACKUP_DIR"
 
-# Correct rsync command - simplified approach
-rsync -avh --exclude=.DS_Store --progress --delete "$SOURCE_DIR" "$BACKUP_DIR" 2>&1 | tee -a "$LOG_FILE"
+# Rsync with exclusions for venv and __pycache__ (recursively), and .venv for common setups
+# Also exclude .DS_Store files
+rsync -avh \
+  --exclude='.DS_Store' \
+  --exclude='venv/' \
+  --exclude='.venv/' \
+  --exclude='__pycache__/' \
+  --progress --delete \
+  "$SOURCE_DIR" "$BACKUP_DIR" 2>&1 | tee -a "$LOG_FILE"
+status=${PIPESTATUS[0]}
 
 # Check rsync exit status
-if [ $? -eq 0 ]; then
+if [ $status -eq 0 ]; then
     log "Rsync completed successfully"
 else
-    log "Rsync failed with error code $?"
+    log "Rsync failed with error code $status"
 fi
 
-# Update checkpoint file with current timestamp and file list
+# Update checkpoint file with current timestamp and file list (skipping venv/.venv/__pycache__/ and .DS_Store)
 log "Updating checkpoint file"
-echo "Last backup: $(date)" > "$CHECKPOINT_FILE"
-find "$SOURCE_DIR" -type f -print0 | while IFS= read -r -d '' file; do
-    echo "${file#$SOURCE_DIR}" >> "$CHECKPOINT_FILE"
-done
+{
+    echo "Last restore: $(date)"
+    find "$SOURCE_DIR" \
+        -type d \( -name venv -o -name .venv -o -name __pycache__ \) -prune -o \
+        -type f ! -name '.DS_Store' -print0 |
+    while IFS= read -r -d '' file; do
+        echo "${file#$SOURCE_DIR}"
+    done
+} > "$CHECKPOINT_FILE"
 
-log "Backup process completed"
+log "Restore process completed"
